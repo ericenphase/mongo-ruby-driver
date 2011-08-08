@@ -31,7 +31,7 @@ buffer_t buffer_new(void);
 
 /* Free the memory allocated for `buffer`.
  * Return non-zero on failure. */
-int buffer_free(buffer_t buffer);
+int bson_buffer_free(buffer_t buffer);
 
 /* Save `size` bytes from the current position in `buffer` (and grow if needed).
  * Return offset for writing, or -1 on allocation failure. */

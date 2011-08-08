@@ -118,10 +118,10 @@ static void write_utf8(buffer_t buffer, VALUE string, char check_null) {
     result_t status = check_string(RSTRING_PTR(string), RSTRING_LEN(string),
                                    1, check_null);
     if (status == HAS_NULL) {
-        buffer_free(buffer);
+        bson_buffer_free(buffer);
         rb_raise(InvalidDocument, "Key names / regex patterns must not contain the NULL byte");
     } else if (status == NOT_UTF_8) {
-        buffer_free(buffer);
+        bson_buffer_free(buffer);
         rb_raise(InvalidStringEncoding, "String not valid UTF-8");
     }
     string = TO_UTF8(string);
@@ -217,7 +217,7 @@ static int write_element(VALUE key, VALUE value, VALUE extra, int allow_id) {
     }
 
     if (TYPE(key) != T_STRING) {
-        buffer_free(buffer);
+        bson_buffer_free(buffer);
         rb_raise(rb_eTypeError, "keys must be strings or symbols");
     }
 
@@ -228,12 +228,12 @@ static int write_element(VALUE key, VALUE value, VALUE extra, int allow_id) {
     if (check_keys == Qtrue) {
         int i;
         if (RSTRING_LEN(key) > 0 && RSTRING_PTR(key)[0] == '$') {
-            buffer_free(buffer);
+            bson_buffer_free(buffer);
             rb_raise(InvalidKeyName, "%s - key must not start with '$'", RSTRING_PTR(key));
         }
         for (i = 0; i < RSTRING_LEN(key); i++) {
             if (RSTRING_PTR(key)[i] == '.') {
-                buffer_free(buffer);
+                bson_buffer_free(buffer);
                 rb_raise(InvalidKeyName, "%s - key must not contain '.'", RSTRING_PTR(key));
             }
         }
@@ -244,7 +244,7 @@ static int write_element(VALUE key, VALUE value, VALUE extra, int allow_id) {
         {
             if (rb_funcall(value, gt_operator, 1, LL2NUM(9223372036854775807LL)) == Qtrue ||
                 rb_funcall(value, lt_operator, 1, LL2NUM(-9223372036854775808ULL)) == Qtrue) {
-                buffer_free(buffer);
+                bson_buffer_free(buffer);
                 rb_raise(rb_eRangeError, "MongoDB can only handle 8-byte ints");
             }
         }
@@ -446,16 +446,16 @@ static int write_element(VALUE key, VALUE value, VALUE extra, int allow_id) {
                 break;
             }
             if (strcmp(cls, "DateTime") == 0 || strcmp(cls, "Date") == 0 || strcmp(cls, "ActiveSupport::TimeWithZone") == 0) {
-                buffer_free(buffer);
+                bson_buffer_free(buffer);
                 rb_raise(InvalidDocument, "%s is not currently supported; use a UTC Time instance instead.", cls);
                 break;
             }
             if(strcmp(cls, "Complex") == 0 || strcmp(cls, "Rational") == 0 || strcmp(cls, "BigDecimal") == 0) {
-                buffer_free(buffer);
+                bson_buffer_free(buffer);
                 rb_raise(InvalidDocument, "Cannot serialize the Numeric type %s as BSON; only Bignum, Fixnum, and Float are supported.", cls);
                 break;
             }
-            buffer_free(buffer);
+            bson_buffer_free(buffer);
             rb_raise(InvalidDocument, "Cannot serialize an object of class %s into BSON.", cls);
             break;
         }
@@ -470,11 +470,11 @@ static int write_element(VALUE key, VALUE value, VALUE extra, int allow_id) {
                 break;
             }
             if(strcmp(cls, "BigDecimal") == 0) {
-                buffer_free(buffer);
+                bson_buffer_free(buffer);
                 rb_raise(InvalidDocument, "Cannot serialize the Numeric type %s as BSON; only Bignum, Fixnum, and Float are supported.", cls);
                 break;
             }
-            buffer_free(buffer);
+            bson_buffer_free(buffer);
             rb_raise(InvalidDocument, "Cannot serialize an object of class %s into BSON.", cls);
             break;
         }
@@ -518,7 +518,7 @@ static int write_element(VALUE key, VALUE value, VALUE extra, int allow_id) {
     default:
         {
             const char* cls = rb_obj_classname(value);
-            buffer_free(buffer);
+            bson_buffer_free(buffer);
             rb_raise(InvalidDocument, "Cannot serialize an object of class %s (type %d) into BSON.", cls, TYPE(value));
             break;
         }
@@ -590,7 +590,7 @@ static void write_doc(buffer_t buffer, VALUE hash, VALUE check_keys, VALUE move_
     } else if (rb_obj_is_kind_of(hash, RB_HASH) == Qtrue) {
         rb_hash_foreach(hash, write_function, pack_extra(buffer, check_keys));
     } else {
-        buffer_free(buffer);
+        bson_buffer_free(buffer);
         rb_raise(InvalidDocument, "BSON.serialize takes a Hash but got a %s", rb_obj_classname(hash));
     }
 
@@ -600,7 +600,7 @@ static void write_doc(buffer_t buffer, VALUE hash, VALUE check_keys, VALUE move_
 
     // make sure that length doesn't exceed 4MB
     if (length > max_bson_size) {
-      buffer_free(buffer);
+      bson_buffer_free(buffer);
       rb_raise(InvalidDocument, "Document too large: BSON documents are limited to %d bytes.", max_bson_size);
       return;
     }
@@ -617,7 +617,7 @@ static VALUE method_serialize(VALUE self, VALUE doc, VALUE check_keys, VALUE mov
     write_doc(buffer, doc, check_keys, move_id);
 
     result = rb_str_new(buffer_get_buffer(buffer), buffer_get_position(buffer));
-    if (buffer_free(buffer) != 0) {
+    if (bson_buffer_free(buffer) != 0) {
         rb_raise(rb_eRuntimeError, "failed to free buffer");
     }
     return result;

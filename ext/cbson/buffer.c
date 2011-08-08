@@ -49,7 +49,7 @@ buffer_t buffer_new(void) {
 
 /* Free the memory allocated for `buffer`.
  * Return non-zero on failure. */
-int buffer_free(buffer_t buffer) {
+int bson_buffer_free(buffer_t buffer) {
     if (buffer == NULL) {
         return 1;
     }
@@ -117,7 +117,7 @@ int buffer_write(buffer_t buffer, const char* data, int size) {
 int buffer_write_at_position(buffer_t buffer, buffer_position position,
                              const char* data, int size) {
     if (position + size > buffer->size) {
-        buffer_free(buffer);
+        bson_buffer_free(buffer);
         return 1;
     }
 
